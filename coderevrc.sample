@@ -1,0 +1,14 @@
+# Copy to /etc/coderev or ~/.coderevrc, then customize with your own choices
+#
+
+WEB_HOST="example.org"
+SSH_USER="me"
+HOST_DIR="~/public_html/coderev"
+WEB_URL="http://$WEB_HOST/~$SSH_USER/coderev"
+
+# Example config to copy to localhost (leave WEB_HOST empty):
+#
+# WEB_HOST=
+# SSH_USER=$(whoami)
+# HOST_DIR="~/public_html/coderev"
+# WEB_URL="http://example.org/~$SSH_USER/coderev"
