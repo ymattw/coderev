@@ -716,7 +716,7 @@ if __name__ == '__main__':
                       type='int', metavar='NUM', default=3,
                       help='specify context line count when generating ' + \
                            'context diff or unified diff, default is 3')
-    parser.add_option('-o', '--outupt', dest='output',
+    parser.add_option('-o', '--output', dest='output',
                       help='specify output file or directory name')
     parser.add_option('-p', '--striplevel', dest='striplevel',
                       type='int', metavar='NUM',
