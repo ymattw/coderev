@@ -627,7 +627,7 @@ class CodeDiffer:
         # Generate footer info
         footer_info = self._footer_info_template % dict(
             time = time.strftime('%a %b %d %X %Z %Y', time.localtime()),
-            myname = _self_name(),
+            myname = _self_name,
         )
 
         # now wirte index page
@@ -736,7 +736,7 @@ if __name__ == '__main__':
 
     if len(args) != 2:
         sys.stderr.write("Sorry, you must specify two file/directory names\n" \
-                         + "type `%s -h' for help\n" % _self_name())
+                         + "type `%s -h' for help\n" % _self_name)
         sys.exit(1)
     if not opts.output:
         sys.stderr.write("Sorry, you must specify output name (use `-o')\n")
