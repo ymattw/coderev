@@ -125,10 +125,10 @@ function get_list_from_patch
     #
     if [[ $(head -1 $patch) =~ ^Index:\ .+ ]]; then
         grep '^Index: ' $patch | sed 's/.* //' \
-            | sed "s|^\([^/]\+/\)\{,$patch_lvl\}||"
+            | sed "s|^\([^/]\+/\)\{0,$patch_lvl\}||"
     elif [[ $(head -1 $patch) =~ ^diff\ .+\ .+ ]]; then
         grep '^diff .+ .+' $patch | sed 's/.* //' \
-            | sed "s|^\([^/]\+/\)\{,$patch_lvl\}||"
+            | sed "s|^\([^/]\+/\)\{0,$patch_lvl\}||"
     else
         echo "Unknown patch format." >&2
         return 1
