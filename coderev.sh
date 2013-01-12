@@ -357,7 +357,7 @@ This line and those below will be ignored--"
             fi
         }
         ${EDITOR} $COMMENT_FILE
-        sed -i '/^--.*--$/, $ d' $COMMENT_FILE
+        sed -i -e '/^--.*--$/, $ d' $COMMENT_FILE
     }
     CODEDIFF_OPT+=" -F $COMMENT_FILE"
 else
