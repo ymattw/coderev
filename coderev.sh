@@ -257,10 +257,12 @@ if $RECV_STDIN; then
     # TODO: consider format other than svn diff
     sed '/^Property changes on:/,/^$/d' | grep -v '^$' > $DIFF || exit 1
 
-    # Redirect stdin, otherwise vim will complain and corrupt term after quit,
-    # or codediff.py cannot get confirmation before overwrite outdir
+    # Redirect stdin to tty for comment input and output dir overwritting
+    # confirmation, otherwise vim will complain and corrupt term after quit
     #
-    $RECV_STDIN && exec < /dev/tty
+    if [[ -z $COMMENTS ]] && [[ -z $COMMENT_FILE ]] || ! $OVERWRITE; then
+        exec < /dev/tty
+    fi
 
     get_list_from_patch $DIFF $PATCH_LVL > $ACTIVE_LIST || exit 1
 else
