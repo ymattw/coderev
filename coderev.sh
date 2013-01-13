@@ -251,6 +251,8 @@ TMPDIR=$(mktemp -d /tmp/coderev.XXXXXX) || exit 1
 ACTIVE_LIST="$TMPDIR/activelist"
 DIFF="$TMPDIR/diffs"
 BASE_SRC="$TMPDIR/$WS_NAME-base"
+PATCH_DRY_RUN_LOG="$TMPDIR/patch-dry-run.log"
+PATCH_LOG="$TMPDIR/patch.log"
 
 if $RECV_STDIN; then
     echo -e "\nReceiving diffs..."
@@ -264,9 +266,9 @@ if $RECV_STDIN; then
         exec < /dev/tty
     fi
 
-    get_list_from_patch $DIFF $PATCH_LVL > $ACTIVE_LIST || exit 1
+    get_list_from_patch $DIFF $PATCH_LVL | sort -u > $ACTIVE_LIST || exit 1
 else
-    $vcs_get_active_list $PATHNAME > $ACTIVE_LIST || exit 1
+    $vcs_get_active_list $PATHNAME | sort -u > $ACTIVE_LIST || exit 1
 fi
 
 [[ -s "$ACTIVE_LIST" ]] || {
@@ -282,7 +284,7 @@ mkdir -p $BASE_SRC || exit 1
 
 SRC_LIST=""
 for f in $(cat $ACTIVE_LIST); do
-    [[ -e $f ]] && SRC_LIST+=" $f"
+    [[ -f $f ]] && SRC_LIST+=" $f"
 done
 
 if [[ -n $SRC_LIST ]]; then
@@ -309,18 +311,18 @@ if ! $RECV_STDIN && [[ -z $REV_ARG ]]; then
     REVERSE_PATCH=true
     PATCH_OPT+=" -R"
 else
-    PATCH_OUTPUT=$(patch $PATCH_OPT --dry-run < $DIFF 2>&1)
-    if [[ $PATCH_OUTPUT =~ 'Reversed .* detected.*Assum.* -R' ]] || \
-        [[ $PATCH_OUTPUT =~ 'No file to patch' ]]; then
+    patch $PATCH_OPT --dry-run < $DIFF > $PATCH_DRY_RUN_LOG 2>&1
+    if grep -Eq 'Reversed .* detected.*Assum.* -R|No file to patch' \
+       $PATCH_DRY_RUN_LOG 2>&1; then
         REVERSE_PATCH=true
         PATCH_OPT+=" -R"
     fi
 fi
 
 # Do real patch with option "-f" (force)
-PATCH_OUTPUT=$(patch $PATCH_OPT -f < $DIFF 2>&1)
-if [[ $PATCH_OUTPUT =~ 'FAILED -- .* reject' ]]; then
-    echo "$PATCH_OUTPUT"
+patch $PATCH_OPT -f < $DIFF > $PATCH_LOG 2>&1
+if grep -q 'FAILED -- .* reject' $PATCH_LOG; then
+    cat $PATCH_LOG
     echo "Failed to apply patch, aborting..." >&2
     exit 1
 fi
