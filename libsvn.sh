@@ -32,7 +32,7 @@ function svn_get_working_revision
 
 function svn_get_active_list
 {
-    # svn 1.5 has 6 columns plus a space while svn 1.6+ has 6 columns
+    # svn 1.5 has 6 columns plus a space while svn 1.6+ has 7 columns
     svn st $@ | grep '^[A-Z]' | cut -c8- | sed 's/^ *//'
 }
 
