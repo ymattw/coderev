@@ -1,0 +1,95 @@
+<html><head>
+        <title>Cdiff of coderev-0.1/README and coderev-0.2/README</title>
+        <style type="text/css">
+            .fromtitle {color:brown; font:bold 11pt;}
+            .totitle {color:green; font:bold 11pt;}
+            .same {color:black; font:9pt;}
+            .change {color:blue; font:9pt;}
+            .delete {color:brown; font:9pt;}
+            .insert {color:green; font:9pt;}
+        </style>
+        <body>
+            <pre><span class="fromtitle">*** coderev-0.1/README Sat Aug 23 17:05:39 2008
+</span><span class="totitle">--- coderev-0.2/README Sat Aug 23 17:07:26 2008
+</span><hr><span class="fromtitle">*** 17,27 ****
+</span><span class="same">  
+</span><span class="same">  == Status ==
+</span><span class="same">  
+</span><span class="change">! Basic function is alreay implemented on top of python difflib.
+</span><span class="same">  
+</span><span class="same">  == Usage ==
+</span><span class="same">  
+</span><span class="change">! Download from http://code.google.com/p/coderev/downloads/list and extract the
+</span><span class="same">  tarball to your disk, there are two tools present for you - codediff.py (to
+</span><span class="same">  compare files/dirs) and coderev.sh (to generate code review page on your svn
+</span><span class="same">  work space).
+</span><span class="totitle">--- 17,28 ----
+</span><span class="same">  
+</span><span class="same">  == Status ==
+</span><span class="same">  
+</span><span class="change">! Basic function is already implemented on top of python difflib.
+</span><span class="same">  
+</span><span class="same">  == Usage ==
+</span><span class="same">  
+</span><span class="change">! Checkout trunk revision http://code.google.com/p/coderev/source/checkout or
+</span><span class="change">! download from http://code.google.com/p/coderev/downloads/list and extract the
+</span><span class="same">  tarball to your disk, there are two tools present for you - codediff.py (to
+</span><span class="same">  compare files/dirs) and coderev.sh (to generate code review page on your svn
+</span><span class="same">  work space).
+</span><hr><span class="fromtitle">*** 54,77 ****
+</span><span class="same">                            wrapped for sdiff, default is no line wrapping
+</span><span class="same">      -y, --yes             do not prompt for overwriting
+</span><span class="same">  
+</span><span class="delete">- 
+</span><span class="same">  * coderev.sh usage
+</span><span class="same">  
+</span><span class="change">!     coderev.sh [-r revsion] [file|subdir ...]
+</span><span class="same">  
+</span><span class="change">!     `revision' is a revision number, or symbol (PREV, BASE, HEAD), see svn
+</span><span class="change">!     books for details.  Default revision is revision of your working copy
+</span><span class="change">!     (aka. BASE)
+</span><span class="same">  
+</span><span class="same">      Default `subdir' is working dir.
+</span><span class="same">  
+</span><span class="same">      Example 1:
+</span><span class="change">!     coderev.sh bin lib
+</span><span class="same">  
+</span><span class="change">!     Generate coderev based on your working copy.  If you are working on the
+</span><span class="change">!     most up-to-date version, this is suggested way (faster).
+</span><span class="same">  
+</span><span class="change">!     Example 2:
+</span><span class="same">      coderev.sh -r HEAD bin lib
+</span><span class="same">  
+</span><span class="same">      Generate coderev based on HEAD revision (up-to-date version in repository),
+</span><span class="totitle">--- 55,82 ----
+</span><span class="same">                            wrapped for sdiff, default is no line wrapping
+</span><span class="same">      -y, --yes             do not prompt for overwriting
+</span><span class="same">  
+</span><span class="same">  * coderev.sh usage
+</span><span class="same">  
+</span><span class="change">!     (optional) cp coderevrc.sample ~/.coderevrc, customize your own
+</span><span class="change">!     cd your-workspace
+</span><span class="change">!     coderev.sh [-r revsion] [-w width] [file|subdir ...]
+</span><span class="same">  
+</span><span class="change">!     `revision' is a revision number, or symbol (PREV, BASE, HEAD) in svn,
+</span><span class="change">!     see svn books for details.  Default revision is revision of your working
+</span><span class="change">!     copy
+</span><span class="change">! 
+</span><span class="change">!     `width' is a number to make code review pages wrap in specific column
+</span><span class="same">  
+</span><span class="same">      Default `subdir' is working dir.
+</span><span class="same">  
+</span><span class="same">      Example 1:
+</span><span class="change">!     coderev.sh -w80 bin lib
+</span><span class="same">  
+</span><span class="change">!     Generate coderev based on your working copy, web pages wrap in column 80.
+</span><span class="change">!     If you are working on the most up-to-date version, this is suggested way
+</span><span class="change">!     (faster).
+</span><span class="same">  
+</span><span class="change">!     Example 2 (for SVN):
+</span><span class="same">      coderev.sh -r HEAD bin lib
+</span><span class="same">  
+</span><span class="same">      Generate coderev based on HEAD revision (up-to-date version in repository),
+</span></pre>
+        </body>
+        </head></html>

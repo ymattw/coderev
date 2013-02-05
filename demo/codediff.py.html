@@ -1,0 +1,794 @@
+<html><head><title>coderev-0.2/codediff.py</title></head><body><pre style="font-family:monospace; font-size:9pt;">#!/usr/bin/env python
+#
+# Homepage: http://code.google.com/p/coderev
+# License: GPLv2, see "COPYING"
+#
+# $Id: codediff.py 9 2008-08-21 14:08:53Z mattwyl $
+
+'''Diff two files/directories and produce HTML pages.'''
+
+import sys, os, stat, errno, time, re, difflib, filecmp
+
+_myname = os.path.basename(sys.argv[0])
+_revision = '$Revision: 9 $'.split()[1]
+
+
+########## globals &amp; templates begin ##########
+# index page layout:
+#
+# h1: dir1 vs dir2
+# summary_info: Files changed/added/deleted: xx/yy/zz
+#
+# Filename C/D/A Summary      Diffs                  Sources
+# Pathname x/y/z         Cdiffs Udiffs Sdiffs Fdiffs Old New
+# Pathname x/y/z         Cdiffs Udiffs Sdiffs Fdiffs Old New
+# Pathname x/y/z         -      -      -      -      -   New
+# Pathname x/y/z         -      -      -      -      Old -
+#
+# Legends:
+# Changed Deleted Added
+# &lt;hr&gt;
+# footer_info
+#
+
+_file_template = """
+&lt;!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"&gt;
+&lt;html&gt;
+
+&lt;head&gt;
+    &lt;meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" /&gt;
+    &lt;title&gt;
+        %(title)s
+    &lt;/title&gt;
+    &lt;style type="text/css"&gt;
+        %(styles)s
+    &lt;/style&gt;
+&lt;/head&gt;
+
+&lt;body&gt;
+    %(header_info)s
+    %(summary_info)s
+    %(data_rows)s
+    %(legend)s
+    &lt;hr&gt;
+    %(footer_info)s
+&lt;/body&gt;
+
+&lt;/html&gt;"""
+
+_styles = """
+    body {font-family: monospace; font-size: 9pt;}
+    #summary_info {font-style: italic;}
+    #summary_table {
+        text-align:left;font-family:monospace;
+        border: 1px solid #ccc; border-collapse: collapse
+    }
+    td {padding-left:5px;padding-right:5px;}
+    #legend {border:medium;text-align:center;}
+    #footer_info {color:#333; font-size:8pt;}
+    .diff {background-color:#ffd;}
+    .added {background-color:#afa;}
+    .deleted {background-color:#faa;}
+    .table_header th {
+        text-align:center;
+        background-color:#f0f0f0;
+        border-bottom: 1px solid #aaa;
+        padding: 4px 4px 4px 4px;
+    }
+    """
+
+_header_info_template = """
+    &lt;h1&gt;%(dir1)s vs %(dir2)s&lt;/h1&gt;"""
+
+_summary_info_template = """
+    &lt;p id="summary_info"&gt;
+        Files Changed/Deleted/Added: %(changed)d/%(deleted)d/%(added)d
+    &lt;/p&gt;"""
+
+_data_rows_template = """
+    &lt;table id="summary_table" cellspacing="1" border="1" nowrap="nowrap"&gt;
+    &lt;tr class="table_header"&gt;
+        &lt;th&gt;Filename&lt;/th&gt;
+        &lt;th&gt;&lt;abbr title="Changed/Deleted/Added"&gt;C/D/A&lt;/abbr&gt; Summary&lt;/th&gt;
+        &lt;th colspan="4"&gt;Diffs&lt;/th&gt;
+        &lt;th colspan="2"&gt;Sources&lt;/th&gt;
+    &lt;/tr&gt;
+    %(data_rows)s
+    &lt;/table&gt;"""
+
+_diff_data_row_template = """
+    &lt;tr class="diff"&gt;
+        &lt;td&gt;%(pathname)s&lt;/td&gt;
+        &lt;td&gt;&lt;abbr title="Changed/Deleted/Added"&gt;%(changed)s/%(deleted)s/%(added)s&lt;/abbr&gt;&lt;/td&gt;
+        &lt;td&gt;&lt;a href=%(pathname)s.cdiff.html title="context diffs"&gt;Cdiffs&lt;/a&gt;&lt;/td&gt;
+        &lt;td&gt;&lt;a href=%(pathname)s.udiff.html title="unified diffs"&gt;Udiffs&lt;/a&gt;&lt;/td&gt;
+        &lt;td&gt;&lt;a href=%(pathname)s.sdiff.html title="side-by-side context diffs"&gt;Sdiffs&lt;/a&gt;&lt;/td&gt;
+        &lt;td&gt;&lt;a href=%(pathname)s.fdiff.html title="side-by-side full diffs"&gt;Fdiffs&lt;/a&gt;&lt;/td&gt;
+        &lt;td&gt;&lt;a href=%(pathname)s-.html title="old file"&gt;Old&lt;/a&gt;&lt;/td&gt;
+        &lt;td&gt;&lt;a href=%(pathname)s.html title="new file"&gt;New&lt;/a&gt;&lt;/td&gt;
+    &lt;/tr&gt;"""
+
+_deleted_data_row_template = """
+    &lt;tr class="deleted"&gt;
+        &lt;td&gt;%(pathname)s&lt;/td&gt;
+        &lt;td&gt;-/-/-&lt;/td&gt;
+        &lt;td&gt;-&lt;/td&gt;
+        &lt;td&gt;-&lt;/td&gt;
+        &lt;td&gt;-&lt;/td&gt;
+        &lt;td&gt;-&lt;/td&gt;
+        &lt;td&gt;&lt;a href=%(pathname)s-.html title="old file"&gt;Old&lt;/a&gt;&lt;/td&gt;
+        &lt;td&gt;-&lt;/td&gt;
+    &lt;/tr&gt;"""
+
+_added_data_row_template = """
+    &lt;tr class="added"&gt;
+        &lt;td&gt;%(pathname)s&lt;/td&gt;
+        &lt;td&gt;-/-/-&lt;/td&gt;
+        &lt;td&gt;-&lt;/td&gt;
+        &lt;td&gt;-&lt;/td&gt;
+        &lt;td&gt;-&lt;/td&gt;
+        &lt;td&gt;-&lt;/td&gt;
+        &lt;td&gt;-&lt;/td&gt;
+        &lt;td&gt;&lt;a href=%(pathname)s.html title="new file"&gt;New&lt;/a&gt;&lt;/td&gt;
+    &lt;/tr&gt;"""
+
+_legend = """
+    &lt;br&gt;&lt;em&gt;Legends:&lt;/em&gt;
+    &lt;table id="legend"&gt;
+        &lt;tr&gt;
+            &lt;td width="20%%" class="diff"&gt;Changed&lt;/td&gt;
+            &lt;td width="20%%" class="deleted"&gt;Deleted&lt;/td&gt;
+            &lt;td width="20%%" class="added"&gt;Added&lt;/td&gt;
+        &lt;/tr&gt;
+    &lt;/table&gt;"""
+
+_footer_info_template = """
+    &lt;i id="footer_info"&gt;
+        Generated by %(myname)s r%(revision)s at %(time)s
+    &lt;/i&gt;"""
+
+_global_dir_ignore_list = (
+    r'^CVS$',
+    r'^SCCS$',
+    r'^\.svn$',
+)
+
+_global_file_ignore_list = (
+    r'.*\.o$',
+    r'.*\.swp$',
+    r'.*\.bak$',
+    r'.*\.old$',
+    r'.*~$',
+    r'^\.cvsignore$',
+)
+########## globals &amp; templates end ##########
+
+
+def makeTitle(pathname, width):
+    'Wrap long pathname to abbreviate name to fit the text width'
+    if not pathname:
+        return 'None'
+
+    if not width or width &lt;= 0:
+        title = pathname
+    elif len(pathname) &gt; width:
+        if width &gt; 3:
+            title = '...' + pathname[-(width-3):]
+        else:
+            title = pathname[-width:]
+    else:
+        title = pathname
+    return title
+
+
+def getLines(file):
+    '''Return content of file (a list, each is a line)'''
+    if not file:
+        return []
+    try:
+        fp = open(file, 'r')
+        lines = fp.readlines()
+        fp.close()
+    except IOError, dig:
+        sys.stderr.write(str(dig) + '\n')
+        sys.exit(2)
+    return lines
+
+
+def sdiffLines(fomeLines, toLines, outFile, fromTitle, toTitle,
+               context, wrapnum, lines):
+    '''diff two texts and return side-by-side html page, write to outFile.
+    Return code indicating whether there are differences'''
+    d = difflib.HtmlDiff(wrapcolumn=wrapnum)
+    d._styles += '''
+        /* customized style */
+        body { font-family:monospace; font-size: 9pt; }
+        table.diff {font-family:monospace; border:medium;}'''
+    html = d.make_file(fomeLines, toLines, fromTitle, toTitle, context, lines)
+
+    try:
+        fp = open(outFile, 'w')
+        fp.write(html)
+        fp.close()
+    except IOError, dig:
+        sys.stderr.write(str(dig) + '\n')
+        sys.exit(2)
+
+
+def cdiffLines(fomeLines, toLines, outFile, fromName, toName,
+               fromDate, toDate, context):
+    '''cdiff two texts and return summary info, write to outFile.
+    Return code indicating whether there are differences'''
+    d = difflib.context_diff(fomeLines, toLines, fromName, toName,
+                             fromDate, toDate, n=context)
+    title = 'Cdiffs of %s and %s' % (fromName, toName)
+    summary, html = cdiffToHtml(d, title)
+
+    try:
+        fp = open(outFile, 'w')
+        fp.write(html)
+        fp.close()
+    except IOError, dig:
+        sys.stderr.write(str(dig) + '\n')
+        sys.exit(2)
+
+    return summary
+
+
+def udiffLines(fomeLines, toLines, outFile, fromName, toName,
+               fromDate, toDate, n):
+    '''udiff two texts and return html page, write to outFile.
+    Return code indicating whether there are differences'''
+    d = difflib.unified_diff(fomeLines, toLines, fromName, toName,
+                             fromDate, toDate, n)
+    title = 'Udiffs of %s and %s' % (fromName, toName)
+    html = udiffToHtml(d, title)
+
+    try:
+        fp = open(outFile, 'w')
+        fp.write(html)
+        fp.close()
+    except IOError, dig:
+        sys.stderr.write(str(dig) + '\n')
+        sys.exit(2)
+
+
+# This is only called when diff two files specified from command line
+def diffFile(file1, file2, outFile, context=False, wrapnum=None, lines=3):
+    '''diff two files and return html page, write to outFile.
+    Return code indicating whether there are differences'''
+    #print 'call diffFile(%s, %s, %s, ...)' % (file1, file2, outFile)
+    #print '-' * 32
+
+    fomeLines = getLines(file1)
+    toLines = getLines(file2)
+    fromTitle = makeTitle(file1, wrapnum)
+    toTitle = makeTitle(file2, wrapnum)
+    sdiffLines(fomeLines, toLines, outFile, fromTitle, toTitle, context,
+               wrapnum, lines)
+
+
+def inIgnoreList(name, ignorelist):
+    for pat in ignorelist:
+        if re.match(pat, name):
+            return True
+    return False
+
+
+def grabDir(dir):
+    'Get file list of dir, and remove unwanted file from the list'
+    flist = []
+    while dir[-1] == '/':   # remove unwanted trailling slash
+        dir = dir[:-1]
+    prefix = dir + '/'      # os.path.sep
+    plen = len(prefix)
+
+    for root, dirs, files in os.walk(dir):
+        for d in [k for k in dirs]:
+            if inIgnoreList(d, _global_dir_ignore_list):
+                dirs.remove(d)
+        for f in files:
+            if not inIgnoreList(f, _global_file_ignore_list):
+                name = os.path.join(root, f)
+                flist.append(name[plen:])
+    return flist
+
+
+def mergeList(list1, list2):
+    # important: should make a new list! don't refer to list1
+    list = [ i for i in list1 ] # XXX: list = list1
+    for i in list2:
+        if i not in list1: list.append(i)
+    return list
+
+
+def sourceToHtml(src, outfile):
+    """Read file `src' and convert to html, write to file `outfile'"""
+    #print 'call sourceToHtml(src=%s, outfile=%s)' % (src, outfile)
+    #print '-' * 32
+    try:
+        infp = open(src, 'r')
+        body = infp.read()
+        infp.close()
+        body = body.replace("&amp;","&amp;amp;").replace("&gt;","&amp;gt;").replace("&lt;","&amp;lt;")
+
+        outfp = open(outfile, 'w')
+        # TODO: convert to syntax highlighted html
+        outfp.write('''&lt;html&gt;&lt;head&gt;&lt;title&gt;%s&lt;/title&gt;&lt;/head&gt;&lt;body&gt;
+            &lt;pre style="font-family:monospace; font-size:9pt;"&gt;%s&lt;/pre&gt;
+            &lt;/body&gt;&lt;/html&gt;''' % (src, body))
+        outfp.close()
+    except IOError, dig:
+        sys.stderr.write(str(dig) + '\n')
+        sys.exit(2)
+
+
+def diffDir(dir1, dir2, outdir, wrapnum=None, lines=3):
+    '''diff two directories and generate an index page.  Return code
+    indicating whether there are differences and the summary info'''
+
+    #print 'call diffDir(%s, %s, %s, ...)' % (dir1, dir2, outdir)
+    #print '_global_dirseq:', _global_dirseq
+    #print '=' * 72
+
+    flist1 = grabDir(dir1)  # already filtered
+    flist2 = grabDir(dir2)
+    flist = mergeList(flist1, flist2)
+    return diffDirByList(dir1, dir2, outdir, flist, wrapnum, lines)
+
+
+def lstatFile(obj):
+    'return None in case ENOENT, else a lstat info'
+    try:
+        statinfo = os.lstat(obj)
+    except OSError, dig:
+        if dig.errno == errno.ENOENT:
+            statinfo = None
+        else:
+            sys.stderr.write(str(dig) + '\n')
+            sys.exit(2)
+    return statinfo
+
+
+def diffDirByList(dir1, dir2, outdir, flist, wrapnum=None, lines=3):
+    '''diff two directories and generate an index page.  Return code
+    indicating whether there are differences and the summary info'''
+
+    data_rows = ''
+    data_row = ''
+    summary = { 'changed': 0, 'added': 0, 'deleted': 0 }
+    file_summary = { 'changed': 0, 'added': 0, 'deleted': 0 }
+    has_diff = False
+
+    flist.sort()
+
+    for f in flist:
+        # set default values
+        fromLines = ''
+        toLines = ''
+        fromDate = ''
+        toDate = ''
+
+        target = os.path.join(outdir, f)
+        obj1 = os.path.join(dir1, f)
+        obj2 = os.path.join(dir2, f)
+
+        # make output dir and sub dir
+        try:
+            os.makedirs(os.path.join(outdir, os.path.dirname(f)))
+        except OSError, dig:
+            if dig.errno != errno.EEXIST:
+                sys.stderr.write(str(dig) + '\n')
+                sys.exit(2)
+
+        stat1 = lstatFile(obj1)
+        stat2 = lstatFile(obj2)
+
+        if stat1 and not stat2: # deleted
+            print '%-40s |' % f,
+            print 'File removed',
+            #st_mtime = time.localtime(stat1[8])
+            if not stat.S_ISREG(stat1[0]) or isBinaryFile(obj1):
+                print '(skipped dir/special/binary)'
+                continue
+            print
+            old = sourceToHtml(obj1, target + '-.html')
+            data_row = _deleted_data_row_template % {'pathname': f}
+            summary['deleted'] += 1
+            has_diff = True
+
+        elif not stat1 and stat2: # added
+            print '%-40s |' % f,
+            print 'New file',
+            if not stat.S_ISREG(stat2[0]) or isBinaryFile(obj2):
+                print '(skipped special/binary)'
+                continue
+            print
+            new = sourceToHtml(obj2, target + '.html')
+            data_row = _added_data_row_template % {'pathname': f}
+            summary['added'] += 1
+            has_diff = True
+
+        elif stat1 and stat2: # same or diff
+            # do not compare special or binary file
+            if not stat.S_ISREG(stat1[0]) or isBinaryFile(obj1):
+                print '%-40s |' % f,
+                print '(skipped, former file is special)'
+                continue
+            if not stat.S_ISREG(stat2[0]) or isBinaryFile(obj2):
+                print '%-40s |' % f,
+                print '(skipped, latter file is binary)'
+                continue
+            if filecmp.cmp(obj1, obj2):
+                continue
+
+            has_diff = True
+            fromDate = time.ctime(stat1[8])
+            toDate = time.ctime(stat2[8])
+            fromLines = getLines(obj1)
+            toLines = getLines(obj2)
+
+            # Cdiffs
+            file_summary = cdiffLines(fromLines, toLines,
+                target+'.cdiff.html', obj1, obj2, fromDate, toDate, lines)
+
+            # Udiffs
+            udiffLines(fromLines, toLines, target+'.udiff.html', obj1, obj2,
+                       fromDate, toDate, lines)
+
+            # Sdiffs
+            sdiffLines(fromLines, toLines, target+'.sdiff.html', obj1, obj2,
+                       True, wrapnum, lines)
+
+            # Fdiffs
+            sdiffLines(fromLines, toLines, target+'.fdiff.html', obj1, obj2,
+                       False, wrapnum, lines)
+
+            print '%-40s |' % f,
+            print 'Changed/Deleted/Added: %d/%d/%d' % (\
+                file_summary['changed'],
+                file_summary['deleted'],
+                file_summary['added'])
+
+            old = sourceToHtml(obj1, target + '-.html')
+            new = sourceToHtml(obj2, target + '.html')
+            data_row = _diff_data_row_template % dict(
+                pathname = f,
+                changed = file_summary['changed'],
+                deleted = file_summary['deleted'],
+                added = file_summary['added'],
+            )
+            summary['changed'] += 1
+        else: # this case occured when controlled by master file list
+            print '%-40s |' % f,
+            print 'Not found'
+            data_row = ''
+
+        data_rows += data_row
+
+    if not has_diff:
+        return False
+
+    # Generate footer info
+    footer_info = _footer_info_template % dict(
+        time = time.strftime('%a %b %d %X %Z %Y', time.localtime()),
+        myname = _myname,
+        revision = _revision
+    )
+
+    # now wirte index page
+    try:
+        index = open(os.path.join(outdir, 'index.html'), 'w')
+    except IOError, dig:
+        sys.stderr.write(str(dig) + '\n')
+        sys.exit(2)
+    index.write(_file_template % dict(
+        title = '%s vs %s' % (dir1, dir2),
+        styles = _styles,
+        header_info = _header_info_template % dict(dir1=dir1, dir2=dir2),
+        summary_info = _summary_info_template % summary,
+        data_rows = _data_rows_template % {'data_rows': data_rows},
+        legend = _legend,
+        footer_info = footer_info,
+    ))
+    index.close()
+    return True
+
+
+def warnOverwrite(pathname):
+    'Warnning for overwriting, return True if answered yes, False if no'
+    msg = "`%s' exists, are you sure you want to overwrite it (yes/no)? "
+    while True:
+        sys.stderr.write(msg % pathname)
+        answer = raw_input('')
+        if answer == 'yes':
+            return True
+        elif answer == 'no':
+            return False
+        # else: prompt again
+
+
+def isBinaryFile(file):
+    '''I determine a binary file by reading the first 1024 bytes of the file
+    and counting the non-text characters, if the number is great than 8, then
+    the file is considered as binary file.  This is not very reliable but is
+    effective'''
+    if not file:
+        return False
+
+    non_text = 0
+    target_count = 8
+    try:
+        fp = open(file, 'rb')
+        data = fp.read(1024)
+        for c in data:
+            a = ord(c)
+            if a &lt; 8 or (a &gt; 13 and a &lt; 32): # not printable
+                non_text += 1
+                if non_text &gt;= target_count: break
+        fp.close()
+    except IOError, dig:
+        sys.stderr.write(str(dig) + '\n')
+        sys.exit(2)
+    return non_text &gt;= target_count
+
+
+def cdiffToHtml(cdiff, title):
+    '''cdiff is context diff (a list) that generated by difflib.context_diff,
+    return summary and html page'''
+    summary = { 'changed': 0, 'added': 0, 'deleted': 0 }
+    line_pattern = '&lt;span class="%s"&gt;%s&lt;/span&gt;'
+
+    body = ''
+    old_group = False
+    for line in cdiff:
+        n = len(line)
+        line = line.replace("&amp;","&amp;amp;").replace("&gt;","&amp;gt;").replace("&lt;","&amp;lt;")
+        if n &gt;= 4 and line[0:4] == '*** ':
+            old_group = True
+            body += line_pattern % ('fromtitle', line)
+        elif n &gt;= 4 and line[0:4] == '--- ':
+            old_group = False
+            body += line_pattern % ('totitle', line)
+        elif n &gt;= 2 and line[0:2] == '  ':
+            body += line_pattern % ('same', line)
+        elif n &gt;= 2 and line[0:2] == '! ':
+            body += line_pattern % ('change', line)
+            if old_group:
+                summary['changed'] += 1
+        elif n &gt;= 2 and line[0:2] == '- ':
+            body += line_pattern % ('delete', line)
+            summary['deleted'] += 1
+        elif n &gt;= 2 and line[0:2] == '+ ':
+            body += line_pattern % ('insert', line)
+            summary['added'] += 1
+        elif n &gt;= 15 and line[0:15] == '*' * 15:
+            body += '&lt;hr&gt;'
+        else: # shouldn't happen
+            body += line
+
+    html = '''&lt;html&gt;&lt;head&gt;
+        &lt;title&gt;%s&lt;/title&gt;
+        &lt;style type="text/css"&gt;
+            .fromtitle {color:brown; font:bold 11pt;}
+            .totitle {color:green; font:bold 11pt;}
+            .same {color:black; font:9pt;}
+            .change {color:blue; font:9pt;}
+            .delete {color:brown; font:9pt;}
+            .insert {color:green; font:9pt;}
+        &lt;/style&gt;
+        &lt;body&gt;
+            &lt;pre&gt;%s&lt;/pre&gt;
+        &lt;/body&gt;
+        &lt;/head&gt;&lt;/html&gt;''' % (title, body)
+    return summary, html
+
+
+def udiffToHtml(udiff, title):
+    '''udiff is uniform diff (a list) that generated by difflib.uniform_diff,
+    return html page'''
+
+    line_pattern = '&lt;span class="%s"&gt;%s&lt;/span&gt;'
+    body = ''
+    for line in udiff:
+        n = len(line)
+        line = line.replace("&amp;","&amp;amp;").replace("&gt;","&amp;gt;").replace("&lt;","&amp;lt;")
+        if n &gt;= 4 and line[0:4] == '--- ':
+            body += line_pattern % ('fromtitle', line)
+        elif n &gt;= 4 and line[0:4] == '+++ ':
+            body += line_pattern % ('totitle', line)
+        elif n &gt;= 1 and line[0] == ' ':
+            body += line_pattern % ('same', line)
+        elif n &gt;= 1 and line[0] == '-':
+            body += line_pattern % ('old', line)
+        elif n &gt;= 1 and line[0] == '+':
+            body += line_pattern % ('new', line)
+        elif n &gt;= 4 and line[0:4] == '@@ -':
+            body += '&lt;hr&gt;'
+            body += line_pattern % ('head', line)
+        else: # shouldn't happen
+            body += line
+
+    html = '''&lt;html&gt;&lt;head&gt;
+        &lt;title&gt;%s&lt;/title&gt;
+        &lt;style type="text/css"&gt;
+            .fromtitle {color:brown; font:bold 11pt;}
+            .totitle {color:green; font:bold 11pt;}
+            .head {color:blue; font:bold 9pt;}
+            .same {color:black; font:9pt;}
+            .old {color:brown; font:9pt;}
+            .new {color:green; font:9pt;}
+        &lt;/style&gt;
+        &lt;body&gt;
+            &lt;pre&gt;%s&lt;/pre&gt;
+        &lt;/body&gt;
+        &lt;/head&gt;&lt;/html&gt;''' % (title, body)
+    return html
+
+
+def stripPrefix(name, p=0):
+    '''strip NUM slashes, like patch(1) -pNUM
+    eg1: /foo/bar/a/b/x.c
+    -p0 gives orignal name (no change)
+    -p1 gives foo/bar/a/b/x.c
+    -p2 gives bar/a/b/x.c
+    -p9 gives x.c
+
+    eg2: foo/bar/a/b/x.c
+    -p0 gives orignal name (no change)
+    -p1 gives bar/a/b/x.c
+    -p2 gives a/b/x.c
+    -p9 gives x.c
+
+    eg3: ./foo/bar/a/b/x.c
+    -p0 gives orignal name (no change)
+    -p1 gives foo/bar/a/b/x.c
+    -p2 gives bar/a/b/x.c
+    -p9 gives x.c
+    '''
+    cur = 0
+    tail = len(name) - 1
+    while p &gt; 0:
+        index = name.find('/', cur)
+        #print 'p:', p, 'cur:', cur, 'index:', index
+        if index == -1: break
+        while index &lt;= tail and name[index] == '/':
+            index += 1
+        cur = index
+        p -= 1
+    return name[cur:]
+
+
+def readFileList(file, p=0):
+    '''Return content of filelist (a file, each line is a filename)'''
+    flist = []
+    if not file:
+        return []
+    if file == '-':  # read from stdin
+        flist = sys.stdin.readlines()
+    else:
+        try:
+            fp = open(file, 'r')
+            flist = fp.readlines()
+            fp.close()
+        except IOError, dig:
+            sys.stderr.write(str(dig) + '\n')
+            sys.exit(2)
+
+    outlist = []
+    for i in flist:
+        outlist.append(stripPrefix(i, p).rstrip())
+    #print outlist
+    return outlist
+
+
+if __name__ == '__main__':
+    import optparse
+
+    usage = '''
+    %(name)s [options] OLD NEW
+    %(name)s OLD NEW [options]
+
+    Diff two files/directories and produce HTML pages.''' % \
+    {'name': os.path.basename(sys.argv[0])}
+
+    parser = optparse.OptionParser(usage)
+    parser.add_option('-o', '--outupt', dest='output',
+                      help='specify output file or directory name')
+    parser.add_option('-c', '--context', action='store_true',
+                      dest='context', default=False,
+                      help='generate context diff (default is full diff),' + \
+                           ' only take effect when diffing two files')
+    parser.add_option('-f', '--filelist', dest='filelist', metavar='FILE',
+                      help='specify a file list to read from, filelist can ' + \
+                           'be generated by find -type f, specify - to read' + \
+                           ' from stdin')
+    parser.add_option('-p', '--striplevel', dest='striplevel',
+                      type='int', metavar='NUM',
+                      help='for all pathnames in the filelist, delete NUM ' + \
+                           'path name components from the beginning of each' + \
+                           ' path name, it is similar to patch(1) -p')
+    parser.add_option('-n', '--lines', dest='lines',
+                      type='int', metavar='NUM', default=3,
+                      help='specify context line count when generating ' + \
+                           'context diffs or unified diffs, default is 3')
+    parser.add_option('-w', '--wrap', dest='wrapnum',
+                      type='int', metavar='WIDTH',
+                      help='specify column number where lines are broken ' + \
+                      'and wrapped for sdiff, default is no line wrapping')
+    parser.add_option('-y', '--yes', action='store_true',
+                      dest='overwrite', default=False,
+                      help='do not prompt for overwriting')
+
+    opts, args = parser.parse_args()
+
+    if len(args) != 2:
+        sys.stderr.write("Sorry, you must specify two file/directory names\n" \
+                         + "type `%s -h' for help\n" % _myname)
+        sys.exit(1)
+
+    if not opts.output:
+        sys.stderr.write("Sorry, you must specify output name (use `-o')\n")
+        sys.exit(2)
+
+    try:
+        # Note: use stat instead lstat to permit symbolic links
+        stat1 = os.stat(args[0])[0]
+        stat2 = os.stat(args[1])[0]
+    except OSError, dig:
+        sys.stderr.write(str(dig) + '\n')
+        sys.exit(2)
+
+    # Compare two files
+    #
+    if stat.S_ISREG(stat1) and stat.S_ISREG(stat2):
+        if not opts.overwrite and os.path.exists(opts.output):
+            if not warnOverwrite(opts.output): sys.exit(1)
+        url = 'file://%s\n' % os.path.realpath(opts.output)
+
+        if filecmp.cmp(args[0], arg2[1]):
+            print 'No difference found.'
+        else:
+            diffFile(args[0], args[1], opts.output, opts.context,
+                    opts.wrapnum, opts.lines)
+            print '\nURL:\n%s' % url
+
+    # Compare two dirs
+    #
+    elif stat.S_ISDIR(stat1) and stat.S_ISDIR(stat2):
+        if not opts.overwrite and os.path.exists(opts.output):
+            if opts.filelist == '-':
+                # stdin redirected, so we cannot read answer from stdin
+                print "`%s' exists, please select another output directory, " \
+                      "or specify '-y' to force overwriting." % opts.output
+                sys.exit(1)
+            else:
+                if not warnOverwrite(opts.output):
+                    sys.exit(1)
+        url = 'file://%s/index.html\n' % os.path.realpath(opts.output)
+
+        if opts.filelist:
+            # filelist mode, contolled by master file list
+            # read file list, ignore lines with first char is '/'
+            # if see 'foo/bar/abc', makedirs foo/bar/, then put abc.diffs to it
+            flist = readFileList(opts.filelist, opts.striplevel)
+            if diffDirByList(args[0], args[1], opts.output,
+                             flist, opts.wrapnum, opts.lines):
+                print '\nURL:\n%s' % url
+            else:
+                print 'No difference found.'
+        else:
+            if diffDir(args[0], args[1], opts.output, opts.wrapnum,
+                       opts.lines):
+                print '\nURL:\n%s' % url
+            else:
+                print 'No difference found.'
+
+    else:
+        sys.stderr.write("Sorry, I don't know how to compare `%s' and `%s'\n" \
+                         % (args[0], args[1]))
+        sys.exit(2)
+
+# vim:set et sts=4 sw=4:
+</pre></body></html>
