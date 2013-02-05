@@ -6,7 +6,7 @@ Coderev is a toolkit generates static side-by-side html pages for code review.
 Typical use case is to generate diff pages for local modification in svn/cvs
 workspace and send page link to teammates for code review.
 
-See [joyus.org/pub/coderev-demo](http://joyus.org/pub/coderev-demo) for a demo.
+See [ymattw.github.com/coderev/demo/](http://ymattw.github.com/coderev/demo/) for a demo.
 
 This toolkit contains two scripts that can be used separately.
 
