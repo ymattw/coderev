@@ -1,3 +1,5 @@
+*Hey, maybe you are just looking for a side-by-side diff viewer?  Try [cdiff](https://github.com/ymattw/cdiff) instead.*
+
 # Coderev - A toolkit generates side-by-side html pages for code review
 
 ## About
