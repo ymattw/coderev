@@ -116,6 +116,41 @@ EOF
     return 0
 }
 
+function filter_svn_diff
+{
+sed -n -e '
+#no-auto-print
+#
+# Keep the current set of differences in the hold buffer.
+# When the "Index:" line is first seen it is changed to "ndex:"
+# and then saved into the hold buffer.
+# This will be changed back to "Index:" if some
+# differences are found.  Differences begin with "@@".
+#
+# All lines beginning with "Property changes"
+# up to the next "Index:" line will be filtered out.
+#
+/^Property changes on: /,/^Index:/ {
+  # If on last line, check the hold buffer for diffs and print them.
+  $ {g; /^Index:/p; q}
+  # Skip lines that do not begin with "Index:".
+  /^Index:/!b
+  # Else, if the line begins with "Index:" fall through.
+}
+# For "Index:" lines, change to "ndex:" and swap with hold buffer.
+# If differences are present in the hold buffer, print them.
+/^Index:/ {s/^I//; x; /^Index:/p; b}
+# If an actual change is found, change the first line in the hold
+# buffer from "ndex;" to "Index:".
+/^@@ / {x; s/^n/In/; x}
+# If on last line, append this line to the hold buffer,
+# then check the hold buffer for diffs and print them.
+$ {H; g; /^Index:/p; q}
+# Otherwise, append the input line to the hold buffer.
+H
+' $*
+}
+
 function get_list_from_patch
 {
     local patch=${1?"patch file required"}
@@ -257,7 +292,7 @@ PATCH_LOG="$TMPDIR/patch.log"
 if $RECV_STDIN; then
     echo -e "\nReceiving diffs..."
     # TODO: consider format other than svn diff
-    sed '/^Property changes on:/,/^$/d' | grep -v '^$' > $DIFF || exit 1
+    filter_svn_diff > $DIFF || exit 1
 
     # Redirect stdin to tty for comment input and output dir overwritting
     # confirmation, otherwise vim will complain and corrupt term after quit
