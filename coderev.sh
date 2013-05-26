@@ -141,7 +141,7 @@ sed -n -e '
 # If differences are present in the hold buffer, print them.
 /^Index:/ {s/^I//; x; /^Index:/p; b}
 # If an actual change is found, change the first line in the hold
-# buffer from "ndex;" to "Index:".
+# buffer from "ndex:" to "Index:".
 /^@@ / {x; s/^n/In/; x}
 # If on last line, append this line to the hold buffer,
 # then check the hold buffer for diffs and print them.
