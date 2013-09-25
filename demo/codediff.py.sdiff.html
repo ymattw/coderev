@@ -1,0 +1,97 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html>
+
+<head>
+    <meta http-equiv="Content-Type"
+          content="text/html; charset=ISO-8859-1" />
+    <title></title>
+    <style type="text/css">
+        table.diff {font-family:Courier; border:medium;}
+        .diff_header {background-color:#e0e0e0}
+        td.diff_header {text-align:right}
+        .diff_next {background-color:#c0c0c0}
+        .diff_add {background-color:#aaffaa}
+        .diff_chg {background-color:#ffff77}
+        .diff_sub {background-color:#ffaaaa}
+        /* customized style */
+        body { font-family:monospace; font-size: 9pt; }
+        table.diff {font-family:monospace; border:medium;}
+    </style>
+</head>
+
+<body>
+    
+    <table class="diff" id="difflib_chg_to2__top"
+           cellspacing="0" cellpadding="0" rules="groups" >
+        <colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup>
+        <colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup>
+        <thead><tr><th class="diff_next"><br /></th><th colspan="2" class="diff_header">coderev-0.1/codediff.py</th><th class="diff_next"><br /></th><th colspan="2" class="diff_header">coderev-0.2/codediff.py</th></tr></thead>
+        <tbody>
+            <tr><td class="diff_next" id="difflib_chg_to2__0"></td><td class="diff_header" id="from2_3">3</td><td nowrap="nowrap">#&nbsp;Homepage:&nbsp;http://code.google.com/p/coderev</td><td class="diff_next"></td><td class="diff_header" id="to2_3">3</td><td nowrap="nowrap">#&nbsp;Homepage:&nbsp;http://code.google.com/p/coderev</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_4">4</td><td nowrap="nowrap">#&nbsp;License:&nbsp;GPLv2,&nbsp;see&nbsp;"COPYING"</td><td class="diff_next"></td><td class="diff_header" id="to2_4">4</td><td nowrap="nowrap">#&nbsp;License:&nbsp;GPLv2,&nbsp;see&nbsp;"COPYING"</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_5">5</td><td nowrap="nowrap">#</td><td class="diff_next"></td><td class="diff_header" id="to2_5">5</td><td nowrap="nowrap">#</td></tr>
+            <tr><td class="diff_next"><a href="#difflib_chg_to2__1">n</a></td><td class="diff_header" id="from2_6">6</td><td nowrap="nowrap">#&nbsp;$Id:&nbsp;codediff.py&nbsp;<span class="diff_chg">3</span>&nbsp;2008-08-1<span class="diff_chg">9&nbsp;0</span>4:0<span class="diff_chg">6</span>:<span class="diff_chg">17</span>Z&nbsp;mattwyl&nbsp;$</td><td class="diff_next"><a href="#difflib_chg_to2__1">n</a></td><td class="diff_header" id="to2_6">6</td><td nowrap="nowrap">#&nbsp;$Id:&nbsp;codediff.py&nbsp;<span class="diff_chg">9</span>&nbsp;2008-08-<span class="diff_add">2</span>1<span class="diff_chg">&nbsp;1</span>4:0<span class="diff_chg">8</span>:<span class="diff_chg">53</span>Z&nbsp;mattwyl&nbsp;$</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_7">7</td><td nowrap="nowrap"></td><td class="diff_next"></td><td class="diff_header" id="to2_7">7</td><td nowrap="nowrap"></td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_8">8</td><td nowrap="nowrap">'''Diff&nbsp;two&nbsp;files/directories&nbsp;and&nbsp;produce&nbsp;HTML&nbsp;pages.'''</td><td class="diff_next"></td><td class="diff_header" id="to2_8">8</td><td nowrap="nowrap">'''Diff&nbsp;two&nbsp;files/directories&nbsp;and&nbsp;produce&nbsp;HTML&nbsp;pages.'''</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_9">9</td><td nowrap="nowrap"></td><td class="diff_next"></td><td class="diff_header" id="to2_9">9</td><td nowrap="nowrap"></td></tr>
+            <tr><td class="diff_next" id="difflib_chg_to2__1"></td><td class="diff_header" id="from2_10">10</td><td nowrap="nowrap">import&nbsp;sys,&nbsp;os,&nbsp;stat,&nbsp;errno,&nbsp;time,&nbsp;re,&nbsp;difflib,&nbsp;filecmp</td><td class="diff_next"></td><td class="diff_header" id="to2_10">10</td><td nowrap="nowrap">import&nbsp;sys,&nbsp;os,&nbsp;stat,&nbsp;errno,&nbsp;time,&nbsp;re,&nbsp;difflib,&nbsp;filecmp</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_11">11</td><td nowrap="nowrap"></td><td class="diff_next"></td><td class="diff_header" id="to2_11">11</td><td nowrap="nowrap"></td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_12">12</td><td nowrap="nowrap">_myname&nbsp;=&nbsp;os.path.basename(sys.argv[0])</td><td class="diff_next"></td><td class="diff_header" id="to2_12">12</td><td nowrap="nowrap">_myname&nbsp;=&nbsp;os.path.basename(sys.argv[0])</td></tr>
+            <tr><td class="diff_next"><a href="#difflib_chg_to2__2">n</a></td><td class="diff_header" id="from2_13">13</td><td nowrap="nowrap">_revision&nbsp;=&nbsp;'$Revision:&nbsp;<span class="diff_chg">3</span>&nbsp;$'.split()[1]</td><td class="diff_next"><a href="#difflib_chg_to2__2">n</a></td><td class="diff_header" id="to2_13">13</td><td nowrap="nowrap">_revision&nbsp;=&nbsp;'$Revision:&nbsp;<span class="diff_chg">9</span>&nbsp;$'.split()[1]</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_14">14</td><td nowrap="nowrap"></td><td class="diff_next"></td><td class="diff_header" id="to2_14">14</td><td nowrap="nowrap"></td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_15">15</td><td nowrap="nowrap"></td><td class="diff_next"></td><td class="diff_header" id="to2_15">15</td><td nowrap="nowrap"></td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_16">16</td><td nowrap="nowrap">##########&nbsp;globals&nbsp;&amp;&nbsp;templates&nbsp;begin&nbsp;##########</td><td class="diff_next"></td><td class="diff_header" id="to2_16">16</td><td nowrap="nowrap">##########&nbsp;globals&nbsp;&amp;&nbsp;templates&nbsp;begin&nbsp;##########</td></tr>
+        </tbody>        
+        <tbody>
+            <tr><td class="diff_next" id="difflib_chg_to2__2"></td><td class="diff_header" id="from2_148">148</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Generated&nbsp;by&nbsp;%(myname)s&nbsp;r%(revision)s&nbsp;at&nbsp;%(time)s</td><td class="diff_next"></td><td class="diff_header" id="to2_148">148</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Generated&nbsp;by&nbsp;%(myname)s&nbsp;r%(revision)s&nbsp;at&nbsp;%(time)s</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_149">149</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;&lt;/i&gt;"""</td><td class="diff_next"></td><td class="diff_header" id="to2_149">149</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;&lt;/i&gt;"""</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_150">150</td><td nowrap="nowrap"></td><td class="diff_next"></td><td class="diff_header" id="to2_150">150</td><td nowrap="nowrap"></td></tr>
+            <tr><td class="diff_next"><a href="#difflib_chg_to2__3">n</a></td><td class="diff_header" id="from2_151">151</td><td nowrap="nowrap">_global_dir_ignore_list&nbsp;=&nbsp;<span class="diff_chg">[</span></td><td class="diff_next"><a href="#difflib_chg_to2__3">n</a></td><td class="diff_header" id="to2_151">151</td><td nowrap="nowrap">_global_dir_ignore_list&nbsp;=&nbsp;<span class="diff_chg">(</span></td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_152">152</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;'<span class="diff_chg">\b</span>CVS$',</td><td class="diff_next"></td><td class="diff_header" id="to2_152">152</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;<span class="diff_add">r</span>'<span class="diff_chg">^</span>CVS$',</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_153">153</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;'<span class="diff_chg">\b</span>SCCS$',</td><td class="diff_next"></td><td class="diff_header" id="to2_153">153</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;<span class="diff_add">r</span>'<span class="diff_chg">^</span>SCCS$',</td></tr>
+            <tr><td class="diff_next" id="difflib_chg_to2__3"></td><td class="diff_header" id="from2_154">154</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;'<span class="diff_chg">\b\</span>\.svn$',</td><td class="diff_next"></td><td class="diff_header" id="to2_154">154</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;<span class="diff_add">r</span>'<span class="diff_chg">^</span>\.svn$',</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_155">155</td><td nowrap="nowrap"><span class="diff_sub">]</span></td><td class="diff_next"></td><td class="diff_header" id="to2_155">155</td><td nowrap="nowrap"><span class="diff_add">)</span></td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_156">156</td><td nowrap="nowrap"></td><td class="diff_next"></td><td class="diff_header" id="to2_156">156</td><td nowrap="nowrap"></td></tr>
+            <tr><td class="diff_next"><a href="#difflib_chg_to2__4">n</a></td><td class="diff_header" id="from2_157">157</td><td nowrap="nowrap">_global_file_ignore_list&nbsp;=&nbsp;<span class="diff_chg">[</span></td><td class="diff_next"><a href="#difflib_chg_to2__4">n</a></td><td class="diff_header" id="to2_157">157</td><td nowrap="nowrap">_global_file_ignore_list&nbsp;=&nbsp;<span class="diff_chg">(</span></td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_158">158</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;'.*<span class="diff_sub">\</span>\.o$',</td><td class="diff_next"></td><td class="diff_header" id="to2_158">158</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;<span class="diff_add">r</span>'.*\.o$',</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_159">159</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;'.*<span class="diff_sub">\</span>\.swp$',</td><td class="diff_next"></td><td class="diff_header" id="to2_159">159</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;<span class="diff_add">r</span>'.*\.swp$',</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_160">160</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;'.*<span class="diff_sub">\</span>\.bak$',</td><td class="diff_next"></td><td class="diff_header" id="to2_160">160</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;<span class="diff_add">r</span>'.*\.bak$',</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_161">161</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;'.*<span class="diff_sub">\</span>\.old$',</td><td class="diff_next"></td><td class="diff_header" id="to2_161">161</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;<span class="diff_add">r</span>'.*\.old$',</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_162">162</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;'.*<span class="diff_sub">\\</span>~$',</td><td class="diff_next"></td><td class="diff_header" id="to2_162">162</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;<span class="diff_add">r</span>'.*~$',</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_163">163</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;'<span class="diff_chg">\</span>\.cvsignore$',</td><td class="diff_next"></td><td class="diff_header" id="to2_163">163</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;<span class="diff_add">r</span>'<span class="diff_chg">^</span>\.cvsignore$',</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_164">164</td><td nowrap="nowrap"><span class="diff_sub">]</span></td><td class="diff_next"></td><td class="diff_header" id="to2_164">164</td><td nowrap="nowrap"><span class="diff_add">)</span></td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_165">165</td><td nowrap="nowrap">##########&nbsp;globals&nbsp;&amp;&nbsp;templates&nbsp;end&nbsp;##########</td><td class="diff_next"></td><td class="diff_header" id="to2_165">165</td><td nowrap="nowrap">##########&nbsp;globals&nbsp;&amp;&nbsp;templates&nbsp;end&nbsp;##########</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_166">166</td><td nowrap="nowrap"></td><td class="diff_next"></td><td class="diff_header" id="to2_166">166</td><td nowrap="nowrap"></td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_167">167</td><td nowrap="nowrap"></td><td class="diff_next"></td><td class="diff_header" id="to2_167">167</td><td nowrap="nowrap"></td></tr>
+        </tbody>        
+        <tbody>
+            <tr><td class="diff_next" id="difflib_chg_to2__4"></td><td class="diff_header" id="from2_285">285</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;plen&nbsp;=&nbsp;len(prefix)</td><td class="diff_next"></td><td class="diff_header" id="to2_285">285</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;plen&nbsp;=&nbsp;len(prefix)</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_286">286</td><td nowrap="nowrap"></td><td class="diff_next"></td><td class="diff_header" id="to2_286">286</td><td nowrap="nowrap"></td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_287">287</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;root,&nbsp;dirs,&nbsp;files&nbsp;in&nbsp;os.walk(dir):</td><td class="diff_next"></td><td class="diff_header" id="to2_287">287</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;root,&nbsp;dirs,&nbsp;files&nbsp;in&nbsp;os.walk(dir):</td></tr>
+            <tr><td class="diff_next"><a href="#difflib_chg_to2__top">t</a></td><td class="diff_header" id="from2_288">288</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;d&nbsp;in&nbsp;dirs:</td><td class="diff_next"><a href="#difflib_chg_to2__top">t</a></td><td class="diff_header" id="to2_288">288</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;d&nbsp;in<span class="diff_add">&nbsp;[k&nbsp;for&nbsp;k&nbsp;in</span>&nbsp;dirs<span class="diff_add">]</span>:</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_289">289</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;inIgnoreList(d,&nbsp;_global_dir_ignore_list):</td><td class="diff_next"></td><td class="diff_header" id="to2_289">289</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;inIgnoreList(d,&nbsp;_global_dir_ignore_list):</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_290">290</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dirs.remove(d)</td><td class="diff_next"></td><td class="diff_header" id="to2_290">290</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dirs.remove(d)</td></tr>
+            <tr><td class="diff_next"></td><td class="diff_header" id="from2_291">291</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;f&nbsp;in&nbsp;files:</td><td class="diff_next"></td><td class="diff_header" id="to2_291">291</td><td nowrap="nowrap">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;f&nbsp;in&nbsp;files:</td></tr>
+        </tbody>
+    </table>
+    <table class="diff" summary="Legends">
+        <tr> <th colspan="2"> Legends </th> </tr>
+        <tr> <td> <table border="" summary="Colors">
+                      <tr><th> Colors </th> </tr>
+                      <tr><td class="diff_add">&nbsp;Added&nbsp;</td></tr>
+                      <tr><td class="diff_chg">Changed</td> </tr>
+                      <tr><td class="diff_sub">Deleted</td> </tr>
+                  </table></td>
+             <td> <table border="" summary="Links">
+                      <tr><th colspan="2"> Links </th> </tr>
+                      <tr><td>(f)irst change</td> </tr>
+                      <tr><td>(n)ext change</td> </tr>
+                      <tr><td>(t)op</td> </tr>
+                  </table></td> </tr>
+    </table>
+</body>
+
+</html>

@@ -1,0 +1,274 @@
+<html><head>
+        <title>Udiff of coderev-0.1/coderev.sh and coderev-0.2/coderev.sh</title>
+        <style type="text/css">
+            .fromtitle {color:brown; font:bold 11pt;}
+            .totitle {color:green; font:bold 11pt;}
+            .head {color:blue; font:bold 9pt;}
+            .same {color:black; font:9pt;}
+            .old {color:brown; font:9pt;}
+            .new {color:green; font:9pt;}
+        </style>
+        <body>
+            <pre><span class="fromtitle">--- coderev-0.1/coderev.sh Sat Aug 23 17:05:39 2008
+</span><span class="totitle">+++ coderev-0.2/coderev.sh Sat Aug 23 17:07:26 2008
+</span><hr><span class="head">@@ -6,32 +6,37 @@
+</span><span class="same"> # Generate code review page of &lt;workspace&gt; vs &lt;workspace&gt;@HEAD, by using
+</span><span class="same"> # `codediff.py' - a standalone diff tool
+</span><span class="same"> #
+</span><span class="old">-# Usage: coderev.sh [file|subdir ...]
+</span><span class="new">+# Usage: cd your-workspace; coderev.sh [file|subdir ...]
+</span><span class="same"> #
+</span><span class="old">-# $Id: coderev.sh 4 2008-08-19 05:24:24Z mattwyl $
+</span><span class="new">+# $Id: coderev.sh 10 2008-08-23 09:02:26Z mattwyl $
+</span><span class="same"> 
+</span><span class="same"> PROG_NAME=$(basename $0)
+</span><span class="new">+BINDIR=$(cd $(dirname $0) &amp;&amp; pwd -L) || exit 1
+</span><span class="new">+CODEDIFF=$BINDIR/codediff.py
+</span><span class="same"> 
+</span><span class="same"> function help
+</span><span class="same"> {
+</span><span class="same">     cat &lt;&lt; EOF
+</span><span class="same"> 
+</span><span class="same"> Usage:
+</span><span class="old">-    $PROG_NAME [-r revsion] [file|subdir ...]
+</span><span class="new">+    $PROG_NAME [-r revsion] [-w width] [file|subdir ...]
+</span><span class="same"> 
+</span><span class="old">-    \`revision' is a revision number, or symbol (PREV, BASE, HEAD), see svn
+</span><span class="old">-    books for details.  Default revision is revision of your working copy
+</span><span class="old">-    (aka. BASE)
+</span><span class="new">+    \`revision' is a revision number, or symbol (PREV, BASE, HEAD) in svn,
+</span><span class="new">+    see svn books for details.  Default revision is revision of your working
+</span><span class="new">+    copy
+</span><span class="new">+
+</span><span class="new">+    \`width' is a number to make code review pages wrap in specific column
+</span><span class="same"> 
+</span><span class="same">     Default \`subdir' is working dir.
+</span><span class="same"> 
+</span><span class="same"> Example 1:
+</span><span class="old">-    $PROG_NAME bin lib
+</span><span class="new">+    $PROG_NAME -w80 bin lib
+</span><span class="same"> 
+</span><span class="old">-    Generate coderev based on your working copy.  If you are working on the
+</span><span class="old">-    most up-to-date version, this is suggested way (faster).
+</span><span class="new">+    Generate coderev based on your working copy, web pages wrap in column 80.
+</span><span class="new">+    If you are working on the most up-to-date version, this is suggested way
+</span><span class="new">+    (faster).
+</span><span class="same"> 
+</span><span class="old">-Example 2:
+</span><span class="new">+Example 2 (for SVN):
+</span><span class="same">     $PROG_NAME -r HEAD bin lib
+</span><span class="same"> 
+</span><span class="same">     Generate coderev based on HEAD revision (up-to-date version in repository),
+</span><hr><span class="head">@@ -42,98 +47,150 @@
+</span><span class="same">     return 0
+</span><span class="same"> }
+</span><span class="same"> 
+</span><span class="old">-while getopts "r:h" op; do
+</span><span class="new">+####################  VCS Operations Begin #################### 
+</span><span class="new">+
+</span><span class="new">+# Return code: 0 - Unknown, 1 - SVN, 2 - CVS
+</span><span class="new">+#
+</span><span class="new">+function detect_vcs
+</span><span class="new">+{
+</span><span class="new">+    [[ -f .svn/entries ]] &amp;&amp; return 1
+</span><span class="new">+    [[ -f CVS/Entries ]] &amp;&amp; return 2
+</span><span class="new">+    return 0
+</span><span class="new">+}
+</span><span class="new">+
+</span><span class="new">+function set_vcs_ops
+</span><span class="new">+{
+</span><span class="new">+    local i=${1?}
+</span><span class="new">+    local vcs_opt=${VCS_OPS_TABLE[i]}
+</span><span class="new">+
+</span><span class="new">+    eval vcs_get_banner=\${$vcs_opt[0]}
+</span><span class="new">+    eval vcs_get_repository=\${$vcs_opt[1]}
+</span><span class="new">+    eval vcs_get_project_path=\${$vcs_opt[2]}
+</span><span class="new">+    eval vcs_get_working_revision=\${$vcs_opt[3]}
+</span><span class="new">+    eval vcs_get_active_list=\${$vcs_opt[4]}
+</span><span class="new">+    eval vcs_get_diff=\${$vcs_opt[5]}
+</span><span class="new">+    eval vcs_get_diff_opt=\${$vcs_opt[6]}
+</span><span class="new">+}
+</span><span class="new">+
+</span><span class="new">+# VCS Operations: 
+</span><span class="new">+#   get_banner                        - print banner, return 1 if not supported
+</span><span class="new">+#   get_repository                    - print repository
+</span><span class="new">+#   get_project_path                  - print project path without repository
+</span><span class="new">+#   get_working_revision pathname ... - print working revision
+</span><span class="new">+#   get_active_list pathname ...      - print active file list
+</span><span class="new">+#   get_diff [diff_opt] pathname ...  - get diffs for active files
+</span><span class="new">+#   get_diff_opt                      - print diff option and args
+</span><span class="new">+
+</span><span class="new">+# Unknown ops just defined here, others see libxxx.sh
+</span><span class="new">+#
+</span><span class="new">+UNKNOWN_OPS=( unknown_get_banner : : : : : : )
+</span><span class="new">+
+</span><span class="new">+function unknown_get_banner
+</span><span class="new">+{
+</span><span class="new">+    echo "unknown"
+</span><span class="new">+    return 1
+</span><span class="new">+}
+</span><span class="new">+
+</span><span class="new">+VCS_OPS_TABLE=( UNKNOWN_OPS  SVN_OPS  CVS_OPS )
+</span><span class="new">+
+</span><span class="new">+. $BINDIR/libsvn.sh || exit 1
+</span><span class="new">+. $BINDIR/libcvs.sh || exit 1
+</span><span class="new">+
+</span><span class="new">+# Detect VCS (Version Control System) and set handler
+</span><span class="new">+#
+</span><span class="new">+detect_vcs
+</span><span class="new">+set_vcs_ops $?
+</span><span class="new">+
+</span><span class="new">+####################  VCS Operations End #################### 
+</span><span class="new">+
+</span><span class="new">+# Main Proc
+</span><span class="new">+#
+</span><span class="new">+while getopts "hr:w:" op; do
+</span><span class="same">     case $op in
+</span><span class="old">-        r) REV="$OPTARG" ;;
+</span><span class="same">         h) help; exit 0 ;;
+</span><span class="new">+        r) REV_ARG="$OPTARG" ;;
+</span><span class="new">+        w) CODEDIFF_OPT="-w $OPTARG" ;;
+</span><span class="same">         ?) help; exit 1 ;;
+</span><span class="same">     esac
+</span><span class="same"> done
+</span><span class="new">+shift $((OPTIND - 1))
+</span><span class="new">+PATHNAME="${@:-.}"
+</span><span class="same"> 
+</span><span class="old">-shift $((OPTIND - 1))
+</span><span class="old">-SUBDIRS="$@"
+</span><span class="new">+BANNER=$($vcs_get_banner) || {
+</span><span class="new">+    echo "Unsupported version control system ($BANNER)." &gt;&amp;2
+</span><span class="new">+    exit 1
+</span><span class="new">+}
+</span><span class="new">+echo "Version control system \"$BANNER\" detected."
+</span><span class="same"> 
+</span><span class="old">-[[ -n "$REV" ]] &amp;&amp; SVN_OPT="-r $REV"
+</span><span class="old">-
+</span><span class="old">-# Get codediff path
+</span><span class="new">+# Retrive information
+</span><span class="same"> #
+</span><span class="old">-BINDIR=$(cd $(dirname $0) &amp;&amp; pwd -L) || exit 1
+</span><span class="old">-CODEDIFF=$BINDIR/codediff.py
+</span><span class="old">-
+</span><span class="old">-# Retrive SVN information
+</span><span class="old">-#
+</span><span class="old">-echo "Retriving SVN information ..."
+</span><span class="old">-URL=$(svn info | grep '^URL:' | awk '{print $2}') || exit 1
+</span><span class="old">-WS_NAME=$(basename "$URL")
+</span><span class="old">-WS_REV=$(svn info | grep 'Revision:' | awk '{print $2}') || exit 1
+</span><span class="old">-BASE_REV=$(svn info $SVN_OPT | grep 'Revision:' | awk '{print $2}') || exit 1
+</span><span class="old">-echo "URL     : $URL"
+</span><span class="old">-echo "WS_REV  : $WS_REV"
+</span><span class="old">-echo "BASE_REV: $BASE_REV"
+</span><span class="old">-
+</span><span class="new">+echo "Retriving information ..."
+</span><span class="new">+PROJ_PATH=$($vcs_get_project_path)
+</span><span class="new">+WS_NAME=$(basename $PROJ_PATH)
+</span><span class="new">+WS_REV=$($vcs_get_working_revision $PATHNAME)
+</span><span class="new">+echo "Repository       : $($vcs_get_repository)"
+</span><span class="new">+echo "Project path     : $PROJ_PATH"
+</span><span class="new">+echo "Working revision : $WS_REV"
+</span><span class="same"> 
+</span><span class="same"> # Prepare file list and base source
+</span><span class="same"> #
+</span><span class="old">-LIST=$(mktemp /tmp/list.XXXXXX) || exit 1
+</span><span class="old">-DIFF=$(mktemp /tmp/diff.XXXXXX) || exit 1
+</span><span class="old">-BASE_SRC="/tmp/${WS_NAME}@${BASE_REV}"
+</span><span class="new">+TMPDIR=$(mktemp -d /tmp/coderev.XXXXXX) || exit 1
+</span><span class="new">+LIST="$TMPDIR/activelist"
+</span><span class="new">+DIFF="$TMPDIR/diffs"
+</span><span class="new">+BASE_SRC="$TMPDIR/$WS_NAME-base"
+</span><span class="same"> 
+</span><span class="old">-for file in $(svn st $SUBDIRS | grep '^[A-Z]' | awk '{print $2}'); do
+</span><span class="old">-    [[ -d $file ]] &amp;&amp; continue
+</span><span class="old">-    echo $file &gt;&gt; $LIST || exit 1
+</span><span class="old">-done
+</span><span class="new">+$vcs_get_active_list $PATHNAME &gt; $LIST || exit 1
+</span><span class="new">+echo "==========  Active file list  =========="
+</span><span class="new">+cat $LIST
+</span><span class="new">+echo "========================================"
+</span><span class="same"> 
+</span><span class="old">-echo "Active file list:"
+</span><span class="old">-echo "============================"
+</span><span class="old">-cat $LIST
+</span><span class="old">-echo "============================"
+</span><span class="old">-
+</span><span class="old">-# Generate $base_src
+</span><span class="new">+# Generate $BASE_SRC
+</span><span class="same"> #
+</span><span class="same"> mkdir -p $BASE_SRC || exit 1
+</span><span class="same"> tar -cf - $(cat $LIST) | tar -C $BASE_SRC -xf - || exit 1
+</span><span class="same"> 
+</span><span class="same"> echo "Retriving diffs ..."
+</span><span class="old">-svn diff $SVN_OPT $(cat $LIST) &gt; $DIFF || exit 1
+</span><span class="old">-cat $DIFF | patch -NER -p0 -d $BASE_SRC || exit 1
+</span><span class="new">+VCS_REV_OPT=""
+</span><span class="new">+[[ -n $REV_ARG ]] &amp;&amp; VCS_REV_OPT="$($vcs_get_diff_opt $REV_ARG)"
+</span><span class="new">+$vcs_get_diff $VCS_REV_OPT $(cat $LIST) &gt; $DIFF || exit 1
+</span><span class="new">+patch -NER -p0 -d $BASE_SRC &lt; $DIFF || exit 1
+</span><span class="same"> 
+</span><span class="same"> # Generate coderev
+</span><span class="same"> #
+</span><span class="old">-CODEREV=/tmp/${WS_NAME}-diff-${BASE_REV}
+</span><span class="old">-cat $LIST | $CODEDIFF -o $CODEREV -w80 -y -f- $BASE_SRC . || exit 1
+</span><span class="old">-
+</span><span class="old">-echo
+</span><span class="old">-echo "Coderev generated under $CODEREV"
+</span><span class="new">+echo "Generating code review ..."
+</span><span class="new">+CODEREV=$TMPDIR/${WS_NAME}-r${WS_REV}-diff
+</span><span class="new">+$CODEDIFF $CODEDIFF_OPT -o $CODEREV -y -f- $BASE_SRC . &lt; $LIST || exit 1
+</span><span class="new">+echo "Coderev pages generated at $CODEREV"
+</span><span class="same"> echo
+</span><span class="same"> 
+</span><span class="same"> # Cleanup
+</span><span class="same"> #
+</span><span class="same"> rm -rf $LIST $DIFF $BASE_SRC
+</span><span class="same"> 
+</span><span class="new">+# Copy to web host
+</span><span class="new">+#
+</span><span class="new">+[[ -r ~/.coderevrc ]] || {
+</span><span class="new">+    echo "[*] Hint: if you want to copy coderev pages to a remote host"
+</span><span class="new">+    echo "    automatically, see coderevrc.sample"
+</span><span class="new">+    echo
+</span><span class="new">+    exit 0
+</span><span class="new">+}
+</span><span class="same"> 
+</span><span class="old">-##############################################################################
+</span><span class="old">-#
+</span><span class="old">-# Customize your webdir to save coderev:
+</span><span class="old">-#
+</span><span class="old">-# 1. define WEBHOST, SSH_USER, HOST_DIR and WEBDIR
+</span><span class="old">-# 2. Comment out the line ":&lt;&lt; \__copy_to_webserver__" below
+</span><span class="old">-#
+</span><span class="old">-##############################################################################
+</span><span class="new">+. ~/.coderevrc || {
+</span><span class="new">+    echo "Reading ~/.coderevrc failed." &gt;&amp;2
+</span><span class="new">+    exit 1
+</span><span class="new">+}
+</span><span class="same"> 
+</span><span class="old">-: &lt;&lt; __copy_to_webserver__
+</span><span class="new">+: ${WEB_HOST?"WEB_HOST not defined."}
+</span><span class="new">+: ${SSH_USER?"SSH_USER not defined."}
+</span><span class="new">+: ${HOST_DIR?"HOST_DIR not defined."}
+</span><span class="new">+: ${WEB_URL?"WEB_URL not defined."}
+</span><span class="same"> 
+</span><span class="old">-WEBHOST=example.org
+</span><span class="old">-SSH_USER=me
+</span><span class="old">-HOST_DIR='~/public_html/coderev'
+</span><span class="old">-WEBDIR="http://$WEBHOST/~$SSH_USER/coderev"
+</span><span class="old">-
+</span><span class="old">-scp -r $CODEREV ${SSH_USER}@${WEBHOST}:$HOST_DIR/ || exit 1
+</span><span class="new">+scp -r $CODEREV ${SSH_USER}@${WEB_HOST}:$HOST_DIR/ || exit 1
+</span><span class="same"> 
+</span><span class="same"> echo
+</span><span class="same"> echo "Coderev link:"
+</span><span class="old">-echo "$WEBDIR/$(basename $CODEREV)"
+</span><span class="new">+echo "$WEB_URL/$(basename $CODEREV)"
+</span><span class="same"> echo
+</span><span class="same"> 
+</span><span class="same"> exit 0
+</span><span class="old">-
+</span><span class="old">-__copy_to_webserver__
+</span></pre>
+        </body>
+        </head></html>
