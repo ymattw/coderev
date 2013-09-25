@@ -1,6 +1,8 @@
 *Hey, maybe you are just looking for a side-by-side diff viewer?  Try [cdiff](https://github.com/ymattw/cdiff) instead.*
 
-# Coderev - A toolkit generates side-by-side html pages for code review
+# Coderev
+
+A toolkit generates side-by-side html pages for code review
 
 ## About
 
@@ -8,7 +10,7 @@ Coderev is a toolkit generates static side-by-side html pages for code review.
 Typical use case is to generate diff pages for local modification in svn/cvs
 workspace and send page link to teammates for code review.
 
-See [ymattw.github.com/coderev/demo/](http://ymattw.github.com/coderev/demo/) for a demo.
+See [ymattw.github.com/coderev/demo/](http://ymattw.github.io/coderev/demo/) for a demo.
 
 This toolkit contains two scripts that can be used separately.
 
@@ -22,6 +24,7 @@ and recent moved to github.
 
 Just type `./coderev.sh -h` to see the usage.
 
+```
     Usage:
         coderev.sh [-r revision] [-w width] [-o outdir] [-y] [-d name] \
                 [-F comment-file | -m 'comment...'] [file...]
@@ -110,12 +113,14 @@ Just type `./coderev.sh -h` to see the usage.
         This read comments from file `comments' and generate coderev in a temp
         directory.  (Replace PREV with a revision number this example also works
         for CVS).
+```
 
 ## Usage of codediff.py
 
 Just type `./codediff.py -h` to see the usage.
 
-    Usage: 
+```
+    Usage:
         codediff.py [options] OLD NEW
         codediff.py OLD NEW [options]
 
@@ -147,3 +152,4 @@ Just type `./codediff.py -h` to see the usage.
                             specify column number where lines are broken and
                             wrapped for sdiff, default is no line wrapping
     -y, --yes             do not prompt for overwriting
+```
