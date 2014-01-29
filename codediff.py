@@ -30,6 +30,8 @@ _global_dir_ignore_list = (
     r'^CVS$',
     r'^SCCS$',
     r'^\.svn$',
+    r'^\.repo$',
+    r'^\.git$',
 )
 
 _global_file_ignore_list = (
@@ -40,6 +42,9 @@ _global_file_ignore_list = (
     r'.*~$',
     r'^\.cvsignore$',
 )
+
+textchars = ''.join(map(chr, [7,8,9,10,12,13,27] + range(0x20, 0x100)))
+is_binary_string = lambda bytes: bool(bytes.translate(None, textchars))
 
 def make_title(pathname, width):
     'Wrap long pathname to abbreviate name to fit the text width'
@@ -125,22 +130,10 @@ def convert_to_html(src):
 
 def is_binary_file(file):
     '''
-    Determine a binary file by reading the first 1024 bytes of the file
-    and counting the non-text characters, if the number is great than 8, then
-    the file is considered as binary file.  This is not very reliable but is
-    effective'''
-    non_text = 0
-    target_count = 8
-
-    fp = open(file, 'rb')
-    data = fp.read(1024)
-    for c in data:
-        a = ord(c)
-        if a < 8 or (a > 13 and a < 32): # not printable
-            non_text += 1
-            if non_text >= target_count: break
-    fp.close()
-    return non_text >= target_count
+    Determine a binary file 
+    see http://stackoverflow.com/questions/898669/how-can-i-detect-if-a-file-is-binary-non-text-in-python
+    '''
+    return is_binary_string(open(file).read(2014))
 
 
 def cdiff_to_html(cdiff, title):
@@ -494,12 +487,7 @@ class CodeDiffer:
         else:
             a = self.__grab_dir(self.__obj1)
             b = self.__grab_dir(self.__obj2)
-            c = [k for k in a]
-            for i in b:
-                if i not in a:
-                    c.append(i)
-            # c now is merged list
-            self.__file_list = c
+            self.__file_list = list(set(a)|set(b))
 
     def __diff_dir_by_list(self):
         data_rows = ''
