@@ -146,6 +146,9 @@ Just type `./codediff.py -h` to see the usage.
                             for all pathnames in the filelist, delete NUM path
                             name components from the beginning of each path name,
                             it is similar to patch(1) -p
+    -P NUM, --pager=NUM     specify maximum number of files listed in index
+                            page. If there's more, additionnal indexnn.html will be
+                            generated.
     -t TITLE, --title=TITLE
                             specify title of output index page
     -w WIDTH, --wrap=WIDTH
