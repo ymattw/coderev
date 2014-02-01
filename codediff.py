@@ -30,6 +30,8 @@ _global_dir_ignore_list = (
     r'^CVS$',
     r'^SCCS$',
     r'^\.svn$',
+    r'^\.repo$',
+    r'^\.git$',
 )
 
 _global_file_ignore_list = (
@@ -40,6 +42,9 @@ _global_file_ignore_list = (
     r'.*~$',
     r'^\.cvsignore$',
 )
+
+textchars = ''.join(map(chr, [7,8,9,10,12,13,27] + range(0x20, 0x100)))
+is_binary_string = lambda bytes: bool(bytes.translate(None, textchars))
 
 def make_title(pathname, width):
     'Wrap long pathname to abbreviate name to fit the text width'
@@ -125,22 +130,10 @@ def convert_to_html(src):
 
 def is_binary_file(file):
     '''
-    Determine a binary file by reading the first 1024 bytes of the file
-    and counting the non-text characters, if the number is great than 8, then
-    the file is considered as binary file.  This is not very reliable but is
-    effective'''
-    non_text = 0
-    target_count = 8
-
-    fp = open(file, 'rb')
-    data = fp.read(1024)
-    for c in data:
-        a = ord(c)
-        if a < 8 or (a > 13 and a < 32): # not printable
-            non_text += 1
-            if non_text >= target_count: break
-    fp.close()
-    return non_text >= target_count
+    Determine a binary file 
+    see http://stackoverflow.com/questions/898669/how-can-i-detect-if-a-file-is-binary-non-text-in-python
+    '''
+    return is_binary_string(open(file).read(2014))
 
 
 def cdiff_to_html(cdiff, title):
@@ -272,6 +265,21 @@ def strip_prefix(name, p=0):
 class CodeDifferError(Exception):
     pass
 
+class Pager:
+    def __init__(self, numitem):
+        self._numitem=numitem
+        self.pages=['']
+        self._count = 0
+
+    def add(self, item):
+        if not item: return
+        if item=='': return
+        self._count += 1
+        if self._count >= self._numitem:
+            self._count = 0
+            self.pages.append('')
+        s=self.pages.pop()+item
+        self.pages.append(s)
 
 class CodeDiffer:
 
@@ -312,9 +320,11 @@ class CodeDiffer:
     %(header_info)s
     %(comments_info)s
     %(summary_info)s
+    %(index_div)s
     %(data_rows)s
     <hr>
     %(footer_info)s
+    %(index_div)s
 </body>
 
 </html>"""
@@ -339,6 +349,18 @@ class CodeDiffer:
         border-bottom: 1px solid #aaa;
         padding: 4px 4px 4px 4px;
     }
+    li { display: inline; background-color:#eee; margin:.2em;padding:.2em;zoom:1; }
+    """
+
+    _index_sub_template = """
+    <li><a href='index%04i.html'>%04i</a></li>
+
+    """
+    _index_gen_template = """
+    <div><ul>
+    %s
+    </ul></div>
+
     """
 
     _header_info_template = """
@@ -417,9 +439,10 @@ class CodeDiffer:
 
     ########## templates end ##########
 
+   
 
     def __init__(self, obj1, obj2, output, input_list=None, strip_level=0,
-                       wrap_num=0, context_line=3, title='', comments=''):
+                       wrap_num=0, context_line=3, title='', pager=1000, comments=''):
         self.__obj1 = obj1
         self.__obj2 = obj2
         self.__output = output
@@ -430,6 +453,7 @@ class CodeDiffer:
         self.__file_list = []
         self.__title = title
         self.__comments = comments
+        self.__pager=Pager(pager)
         # TODO: provide options
         self.__dir_ignore_list = _global_dir_ignore_list
         self.__file_ignore_list = _global_file_ignore_list
@@ -494,15 +518,10 @@ class CodeDiffer:
         else:
             a = self.__grab_dir(self.__obj1)
             b = self.__grab_dir(self.__obj2)
-            c = [k for k in a]
-            for i in b:
-                if i not in a:
-                    c.append(i)
-            # c now is merged list
-            self.__file_list = c
+            self.__file_list = list(set(a)|set(b))
+        print "total %s files to check"%len(self.__file_list)
 
     def __diff_dir_by_list(self):
-        data_rows = ''
         data_row = ''
         summary = { 'changed': 0, 'added': 0, 'deleted': 0 }
         file_summary = { 'changed': 0, 'added': 0, 'deleted': 0 }
@@ -617,9 +636,9 @@ class CodeDiffer:
             else: # this case occured when controlled by master file list
                 print '  * %-40s |' % f,
                 print 'Not found'
-                data_row = ''
+                data_row=''
+            self.__pager.add(data_row)
 
-            data_rows += data_row
 
         if not has_diff:
             return False
@@ -637,18 +656,35 @@ class CodeDiffer:
             title = '%s vs %s' % (self.__obj1, self.__obj2)
         header_info = self._header_info_template % {'header': title}
 
-        index = open(os.path.join(self.__output, 'index.html'), 'w')
-        index.write(self._index_template % dict(
-            title = title,
-            styles = self._style_template,
-            header_info = header_info,
-            comments_info = self._comments_template % \
-                {'comments': html_filter(self.__comments)},
-            summary_info = self._summary_info_template % summary,
-            data_rows = self._data_rows_template % {'data_rows': data_rows},
-            footer_info = footer_info,
-        ))
-        index.close()
+        # index of index generation
+        pages = len(self.__pager.pages)
+        if pages > 1:
+            index_div = ""
+            for i in range(pages):
+                index_div+=self._index_sub_template%(i,i)
+            index_div=self._index_gen_template%index_div
+        else:
+            index_div=""
+
+        # index pages generation
+        ix = 0
+        for p in self.__pager.pages:
+            pagename="index%04i.html"%ix
+            if pages == 1 : pagename='index.html'
+            index = open(os.path.join(self.__output, pagename), 'w')
+            index.write(self._index_template % dict(
+                title = title,
+                styles = self._style_template,
+                header_info = header_info,
+                comments_info = self._comments_template % \
+                    {'comments': html_filter(self.__comments)},
+                summary_info = self._summary_info_template % summary,
+                data_rows = self._data_rows_template % {'data_rows': p},
+                footer_info = footer_info,
+                index_div = index_div,
+            ))
+            index.close()
+            ix += 1
 
     def __diff_dir(self):
         self.__make_file_list()
@@ -732,6 +768,10 @@ if __name__ == '__main__':
     parser.add_option('-y', '--yes', action='store_true',
                       dest='overwrite', default=False,
                       help='do not prompt for overwriting')
+    parser.add_option('-P', '--pager', dest='pager',
+                      type='int', metavar='NUM', default=1000,
+                      help='specify maximum number of files listed in index page.' + \
+                           'if there\'s more, additionnal indexnn.html will be generated.')
     opts, args = parser.parse_args()
 
     if len(args) != 2:
@@ -766,7 +806,7 @@ if __name__ == '__main__':
     try:
         differ = CodeDiffer(args[0], args[1], opts.output, opts.filelist,
                             opts.striplevel, opts.wrapnum, opts.lines,
-                            opts.title, comments)
+                            opts.title, opts.pager, comments)
         differ.make_diff()
     except CodeDifferError, e:
         sys.stderr.write(str(e) + '\n')
