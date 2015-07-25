@@ -391,6 +391,18 @@ class CodeDiffer:
     %(data_rows)s
     </table>"""
 
+    _same_data_row_template = """
+    <tr class="same">
+        <td>%(pathname)s</td>
+        <td>-/-/-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td><a href="%(pathname_url)s-.html" title="old file">Old</a></td>
+        <td><a href="%(pathname_url)s.html" title="new file">New</a></td>
+    </tr>"""
+
     _diff_data_row_template = """
     <tr class="diff">
         <td>%(pathname)s</td>
@@ -442,7 +454,8 @@ class CodeDiffer:
    
 
     def __init__(self, obj1, obj2, output, input_list=None, strip_level=0,
-                       wrap_num=0, context_line=3, title='', pager=1000, comments=''):
+                       wrap_num=0, context_line=3, title='', pager=1000,
+                       comments='', show_common_files = False):
         self.__obj1 = obj1
         self.__obj2 = obj2
         self.__output = output
@@ -454,6 +467,7 @@ class CodeDiffer:
         self.__title = title
         self.__comments = comments
         self.__pager=Pager(pager)
+        self.__show_common_files = show_common_files
         # TODO: provide options
         self.__dir_ignore_list = _global_dir_ignore_list
         self.__file_ignore_list = _global_file_ignore_list
@@ -588,8 +602,9 @@ class CodeDiffer:
                     print '  * %-40s |' % f,
                     print '(skipped, latter file is binary)'
                     continue
-                if filecmp.cmp(obj1, obj2):
-                    continue
+                if not self.__show_common_files:
+                    if filecmp.cmp(obj1, obj2):
+                        continue
 
                 has_diff = True
                 from_date = time.ctime(stat1[8])
@@ -625,7 +640,13 @@ class CodeDiffer:
 
                 write_file(target + '-.html', convert_to_html(obj1))
                 write_file(target + '.html', convert_to_html(obj2))
-                data_row = self._diff_data_row_template % dict(
+                if file_summary['changed'] == \
+                   file_summary['deleted'] == \
+                   file_summary['added'] == 0:
+                    template = self._same_data_row_template
+                else:
+                    template = self._diff_data_row_template
+                data_row = template % dict(
                     pathname = f,
                     pathname_url = f_url,
                     changed = file_summary['changed'],
