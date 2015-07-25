@@ -66,14 +66,14 @@ def make_title(pathname, width):
 def get_lines(file):
     '''Return content of file (a list, each is a line)'''
     fp = open(file, 'r')
-    lines = fp.readlines()
+    lines = [l.decode('utf-8') for l in fp.readlines()]
     fp.close()
     return lines
 
 
 def write_file(file, content):
     f = open(file, 'w')
-    f.write(content)
+    f.write(content.encode('utf-8'))
     f.close()
 
 
